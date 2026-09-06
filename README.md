@@ -2,24 +2,32 @@
 
 The on-disk k-mer counter for [myloasm](https://github.com/bluenote-1577/myloasm). It is a
 small Rust wrapper around a fork of [KMC](https://github.com/refresh-bio/KMC) that adds
-per-strand counters and myloasm's middle-base quality filter (details in
-[`kmc/README.md`](kmc/README.md)). `myloasm --kmc` runs it as a subprocess so that
+additional functionality that myloasm needs (details in
+[`kmc/README.md`](kmc/README.md)). 
+
+`myloasm --kmc` runs this as a subprocess so that
 huge read sets can be counted with a fixed RAM budget instead of in memory.
 
-It is a separate program because KMC is GPL-3 (myloasm is MIT/Apache) and needs a C++14
+This is a separate program because KMC is GPL-3 (myloasm is MIT/Apache) and needs a C++14
 toolchain that myloasm itself does not.
 
 ## Installing
 
 Requirements: a C++14 compiler (GCC 5+ or Clang), `zlib.h`, and Rust.
 
-```
-cargo install --path .          # installs myloasm-kmc-v1 into ~/.cargo/bin
+```sh
+git clone https://github.com/bluenote-1577/myloasm-kmc.git
+cd myloasm-kmc
+cargo install --path . # installs myloasm-kmc-v1 into ~/.cargo/bin
 ```
 
-Any location on `PATH` works; myloasm looks for an executable called `myloasm-kmc-v1` next to
-its own executable and then on `PATH`. Set `ZLIB_DIR` if `zlib.h` is not on the default include
-path. x86_64 and aarch64 are supported (Linux and macOS).
+`myloasm --kmc` requires this program to be installed. It invokes an executable named
+`myloasm-kmc-v1`, looking first next to the `myloasm` executable and then on `PATH`. The command
+above installs it to `~/.cargo/bin`, which must be on `PATH` (as it normally is after installing
+Rust with rustup).
+
+Set `ZLIB_DIR` if `zlib.h` is not on the default include path. x86_64 and aarch64 are supported
+(Linux and macOS).
 
 ## Interface version
 
@@ -45,13 +53,6 @@ myloasm reads.fq.gz -o out --kmc-stranded-db counts       # reuse the database
 `myloasm-kmc-v1 --help` lists the options. Input files must all be FASTA or all be FASTQ
 (gzip allowed, bzip2 not).
 
-## Checking a build
-
-myloasm's `tests/kmer_counting_equivalence.rs` compares this counter with myloasm's in-memory
-counter and runs whenever `myloasm-kmc-v1` is on `PATH` (or `MYLOASM_KMC_BIN` points at it):
-
-```
-PATH=$PWD/target/release:$PATH cargo test --release --test kmer_counting_equivalence   # in the myloasm repo
 ```
 
 ## License
