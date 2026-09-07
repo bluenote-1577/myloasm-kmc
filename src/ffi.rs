@@ -39,7 +39,6 @@ pub struct KmcStrandedStats {
 #[link(name = "kmc_core", kind = "static")]
 #[cfg_attr(target_os = "macos", link(name = "c++"))]
 #[cfg_attr(not(target_os = "macos"), link(name = "stdc++"))]
-#[link(name = "z")]
 extern "C" {
     /// Returns 0 on success; otherwise 1 with a NUL-terminated message written into `error`.
     pub fn kmc_count_stranded(

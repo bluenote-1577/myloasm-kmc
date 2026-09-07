@@ -32,7 +32,9 @@ cargo install --path . # installs myloasm-kmc-v1 into ~/.cargo/bin
 above installs it to `~/.cargo/bin`, which must be on `PATH` (as it normally is after installing
 Rust with rustup).
 
-Set `ZLIB_DIR` if `zlib.h` is not on the default include path. x86_64 and aarch64 are supported
+The build locates zlib with `pkg-config`, falling back to the compiler and linker default paths.
+For a custom installation, set `ZLIB_INCLUDE_DIR` and `ZLIB_LIB_DIR`, or set `ZLIB_DIR` when zlib
+uses the usual `<prefix>/include` and `<prefix>/lib` layout. x86_64 and aarch64 are supported
 (Linux and macOS).
 
 ## Interface version

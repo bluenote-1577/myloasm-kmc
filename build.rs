@@ -11,9 +11,12 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed={KMC_DIR}");
     println!("cargo:rerun-if-env-changed=ZLIB_DIR");
+    println!("cargo:rerun-if-env-changed=ZLIB_INCLUDE_DIR");
+    println!("cargo:rerun-if-env-changed=ZLIB_LIB_DIR");
 
     let kmc = PathBuf::from(KMC_DIR);
-    let mut core = kmc_build(&kmc);
+    let zlib_include_paths = find_zlib();
+    let mut core = kmc_build(&kmc, &zlib_include_paths);
     core.files(cpp_files(&kmc.join("kmc_core"), |name| {
         !name.starts_with("raduls_")
     }));
@@ -23,7 +26,7 @@ fn main() {
     // The radix sort comes in one variant per instruction set (KMC picks one at run time), each
     // needing its own compiler flag, so they are compiled separately and added as objects.
     for (file, flag) in radix_sort_variants() {
-        let mut variant = kmc_build(&kmc);
+        let mut variant = kmc_build(&kmc, &zlib_include_paths);
         if let Some(flag) = flag {
             variant.flag(flag);
         }
@@ -41,8 +44,53 @@ fn main() {
     );
 }
 
+/// Locates zlib and returns the include paths needed by the vendored C++ sources.
+///
+/// Explicit paths take precedence, followed by pkg-config. If pkg-config is unavailable (notably
+/// with the zlib supplied by the macOS SDK), the compiler and linker default search paths are used.
+fn find_zlib() -> Vec<PathBuf> {
+    let prefix = env::var_os("ZLIB_DIR").map(PathBuf::from);
+    let include_dir = env::var_os("ZLIB_INCLUDE_DIR")
+        .map(PathBuf::from)
+        .or_else(|| prefix.as_ref().map(|path| path.join("include")));
+    let lib_dir = env::var_os("ZLIB_LIB_DIR")
+        .map(PathBuf::from)
+        .or_else(|| prefix.as_ref().map(|path| path.join("lib")));
+
+    if include_dir.is_some() || lib_dir.is_some() {
+        if let Some(path) = &include_dir {
+            assert!(
+                path.is_dir(),
+                "configured zlib include directory does not exist: {}",
+                path.display()
+            );
+        }
+        if let Some(path) = &lib_dir {
+            assert!(
+                path.is_dir(),
+                "configured zlib library directory does not exist: {}",
+                path.display()
+            );
+            println!("cargo:rustc-link-search=native={}", path.display());
+        }
+        println!("cargo:rustc-link-lib=z");
+        return include_dir.into_iter().collect();
+    }
+
+    match pkg_config::Config::new().probe("zlib") {
+        Ok(library) => library.include_paths,
+        Err(error) => {
+            println!(
+                "cargo:warning=pkg-config could not locate zlib ({error}); trying the compiler and linker default paths"
+            );
+            println!("cargo:rustc-link-lib=z");
+            Vec::new()
+        }
+    }
+}
+
 /// Compiler settings shared by every KMC translation unit (mirrors the upstream Makefile).
-fn kmc_build(kmc: &Path) -> cc::Build {
+fn kmc_build(kmc: &Path, zlib_include_paths: &[PathBuf]) -> cc::Build {
     let mut build = cc::Build::new();
     build
         .cpp(true)
@@ -53,10 +101,8 @@ fn kmc_build(kmc: &Path) -> cc::Build {
         .flag_if_supported("-pthread")
         .define("KMC_SYSTEM_ZLIB", None) // <zlib.h> instead of the zlib bundled with upstream KMC
         .include(kmc)
+        .includes(zlib_include_paths)
         .cargo_metadata(false);
-    if let Some(zlib_dir) = env::var_os("ZLIB_DIR") {
-        build.include(PathBuf::from(zlib_dir).join("include"));
-    }
     build
 }
 

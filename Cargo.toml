@@ -1,10 +1,12 @@
 [package]
 name = "myloasm-kmc"
-version = "1.0.0"
+version = "0.1.0"
 edition = "2021"
+rust-version = "1.85"
 license = "GPL-3.0-only"
 description = "On-disk k-mer counter for myloasm: KMC with per-strand counters and a middle-base quality filter"
 repository = "https://github.com/bluenote-1577/myloasm-kmc"
+keywords = ["bioinformatics", "genomics", "kmer", "myloasm"]
 build = "build.rs"
 
 # The binary name carries the interface version that myloasm looks for on PATH. Bump it only when
@@ -19,6 +21,7 @@ flate2 = "1"
 
 [build-dependencies]
 cc = { version = "1", features = ["parallel"] }
+pkg-config = "0.3"
 
 [profile.release]
 opt-level = 3

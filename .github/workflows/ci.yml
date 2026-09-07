@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  quality:
+    name: Format and lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust components
+        run: |
+          rustup update stable --no-self-update
+          rustup component add rustfmt clippy
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+  native-build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            runner: ubuntu-24.04
+            linux: true
+          - name: Linux ARM64
+            runner: ubuntu-24.04-arm
+            linux: true
+          - name: macOS x86_64
+            runner: macos-15-intel
+            linux: false
+          - name: macOS ARM64
+            runner: macos-15
+            linux: false
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zlib development files
+        if: matrix.linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config zlib1g-dev
+      - name: Install stable Rust
+        run: rustup update stable --no-self-update
+      - name: Compile and test
+        run: cargo test --locked --all-targets
+      - name: Run the compiled executable
+        run: cargo run --locked -- --version
+
+  msrv:
+    name: Rust 1.85 minimum version
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zlib development files
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config zlib1g-dev
+      - name: Install Rust 1.85
+        run: rustup toolchain install 1.85 --profile minimal --no-self-update
+      - name: Compile and test with Rust 1.85
+        run: cargo +1.85 test --locked --all-targets
+
+  package:
+    name: Verify crates.io package
+    needs: [quality, native-build, msrv]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zlib development files
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config zlib1g-dev
+      - name: Install stable Rust
+        run: rustup update stable --no-self-update
+      - name: Verify package without publishing
+        run: cargo publish --dry-run --locked
