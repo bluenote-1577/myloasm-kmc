@@ -50,6 +50,10 @@ typedef struct kmc_stranded_stats {
    `error` (at most `error_len` bytes, truncated if needed). `stats` may be NULL. */
 int kmc_count_stranded(const kmc_stranded_config* config, kmc_stranded_stats* stats, char* error, size_t error_len);
 
+/* Writes a stranded KMC database as tab-separated <k-mer> <forward count> <reverse count>.
+   Returns 0 on success, or 1 with an error message using the same convention as above. */
+int kmc_dump_stranded(const char* input_db, const char* output_text, char* error, size_t error_len);
+
 #ifdef __cplusplus
 }
 #endif

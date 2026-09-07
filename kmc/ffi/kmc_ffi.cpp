@@ -1,9 +1,12 @@
 #include "kmc_ffi.h"
 #include "../kmc_core/kmc_runner.h"
+#include "../kmc_api/kmc_file.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <exception>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -105,6 +108,52 @@ extern "C" int kmc_count_stranded(const kmc_stranded_config* cfg, kmc_stranded_s
 		return 1;
 	} catch (...) {
 		set_error(error, error_len, "unknown error inside KMC");
+		return 1;
+	}
+}
+
+extern "C" int kmc_dump_stranded(const char* input_db, const char* output_text, char* error, size_t error_len) {
+	bool output_created = false;
+	try {
+		if (!input_db || !output_text)
+			throw std::runtime_error("kmc_dump_stranded: input_db and output_text are required");
+
+		CKMCFile database;
+		if (!database.OpenForListing(input_db))
+			throw std::runtime_error(std::string("cannot open KMC database for listing: ") + input_db);
+		if (!database.IsStranded())
+			throw std::runtime_error("cannot dump a KMC database without per-strand counters");
+
+		std::ofstream output(output_text, std::ios::out | std::ios::trunc);
+		if (!output)
+			throw std::runtime_error(std::string("cannot open text output: ") + output_text);
+		output_created = true;
+
+		const uint32 kmer_length = database.KmerLength();
+		CKmerAPI kmer(kmer_length);
+		std::vector<char> sequence(kmer_length + 1);
+		uint64 count_fwd;
+		uint64 count_rev;
+		while (database.ReadNextKmer(kmer, count_fwd, count_rev)) {
+			kmer.to_string(sequence.data());
+			output.write(sequence.data(), kmer_length);
+			output << '\t' << count_fwd << '\t' << count_rev << '\n';
+		}
+		if (!output)
+			throw std::runtime_error(std::string("failed while writing text output: ") + output_text);
+
+		output.close();
+		database.Close();
+		return 0;
+	} catch (const std::exception& e) {
+		if (output_created)
+			std::remove(output_text);
+		set_error(error, error_len, e.what());
+		return 1;
+	} catch (...) {
+		if (output_created)
+			std::remove(output_text);
+		set_error(error, error_len, "unknown error while dumping KMC database");
 		return 1;
 	}
 }

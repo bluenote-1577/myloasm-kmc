@@ -13,8 +13,10 @@ mod input;
 use clap::Parser;
 use input::{detect_shared_format, ReadFormat};
 use std::ffi::{CStr, CString};
+use std::fs;
+use std::io::ErrorKind;
 use std::os::raw::{c_char, c_int, c_void};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 /// Each per-strand counter takes 4 bytes, so counts match myloasm's in-memory `u32` counts exactly.
@@ -31,16 +33,20 @@ const DEFAULT_MIN_MIDDLE_BASE_QUALITY: u32 = 10;
     name = "myloasm-kmc-v1",
     version,
     about = "On-disk k-mer counter bundled with myloasm (KMC with per-strand counters). \
-             Writes <OUTPUT>.kmc_pre and <OUTPUT>.kmc_suf."
+             Writes a KMC database, or tab-separated counts with --text."
 )]
 struct Args {
     /// Read files, all FASTA or all FASTQ, optionally gzip-compressed
     #[arg(required = true, value_name = "READS")]
     input_files: Vec<String>,
 
-    /// Database base path to write
+    /// Output database base path, or text-file path with --text
     #[arg(short, long, value_name = "PATH")]
     output: PathBuf,
+
+    /// Write tab-separated k-mer, forward-count, and reverse-count records instead of a database
+    #[arg(long)]
+    text: bool,
 
     /// Existing directory for temporary files (needs free space comparable to the input size)
     #[arg(long, value_name = "DIR")]
@@ -91,13 +97,21 @@ fn run(args: &Args) -> Result<(), String> {
         ));
     }
 
+    let temporary_database = args
+        .text
+        .then(|| TemporaryDatabase::create(&args.tmp_dir))
+        .transpose()?;
+    let output_db_path = temporary_database
+        .as_ref()
+        .map_or(args.output.as_path(), |database| database.base_path());
+
     let inputs = args
         .input_files
         .iter()
         .map(|f| c_string(f))
         .collect::<Result<Vec<_>, _>>()?;
     let input_ptrs: Vec<*const c_char> = inputs.iter().map(|s| s.as_ptr()).collect();
-    let output = c_string(&args.output.to_string_lossy())?;
+    let output = c_string(&output_db_path.to_string_lossy())?;
     let tmp_dir = c_string(&args.tmp_dir.to_string_lossy())?;
 
     let config = ffi::KmcStrandedConfig {
@@ -142,6 +156,26 @@ fn run(args: &Args) -> Result<(), String> {
         return Err(format!("KMC failed: {message}"));
     }
 
+    if args.text {
+        let text_output = c_string(&args.output.to_string_lossy())?;
+        error.fill(0);
+        // SAFETY: all pointers refer to CStrings or a writable Vec that outlive the call. The C
+        // side consumes the paths synchronously and does not retain any pointer.
+        let status = unsafe {
+            ffi::kmc_dump_stranded(
+                output.as_ptr(),
+                text_output.as_ptr(),
+                error.as_mut_ptr(),
+                error.len(),
+            )
+        };
+        if status != 0 {
+            // SAFETY: the C side writes a NUL-terminated string into `error` on failure.
+            let message = unsafe { CStr::from_ptr(error.as_ptr()) }.to_string_lossy();
+            return Err(format!("text export failed: {message}"));
+        }
+    }
+
     eprintln!(
         "Done: {} sequences, {} k-mer occurrences, {} distinct k-mers, {} written to {} \
          ({} below the thresholds); stage 1 {:.1}s, stage 2 {:.1}s, {:.2} GB of temporary files",
@@ -156,6 +190,70 @@ fn run(args: &Args) -> Result<(), String> {
         stats.tmp_bytes as f64 / 1e9
     );
     Ok(())
+}
+
+struct TemporaryDatabase {
+    directory: PathBuf,
+    base_path: PathBuf,
+}
+
+impl TemporaryDatabase {
+    fn create(parent: &Path) -> Result<Self, String> {
+        for attempt in 0..1000 {
+            let directory = parent.join(format!(
+                ".myloasm-kmc-v1-text-{}-{attempt}",
+                std::process::id()
+            ));
+            match fs::create_dir(&directory) {
+                Ok(()) => {
+                    let base_path = directory.join("counts");
+                    return Ok(Self {
+                        directory,
+                        base_path,
+                    });
+                }
+                Err(error) if error.kind() == ErrorKind::AlreadyExists => continue,
+                Err(error) => {
+                    return Err(format!(
+                        "cannot create temporary database directory {}: {error}",
+                        directory.display()
+                    ))
+                }
+            }
+        }
+        Err(format!(
+            "cannot create a unique temporary database directory in {}",
+            parent.display()
+        ))
+    }
+
+    fn base_path(&self) -> &Path {
+        &self.base_path
+    }
+}
+
+impl Drop for TemporaryDatabase {
+    fn drop(&mut self) {
+        for name in ["counts.kmc_pre", "counts.kmc_suf"] {
+            let path = self.directory.join(name);
+            if let Err(error) = fs::remove_file(&path) {
+                if error.kind() != ErrorKind::NotFound {
+                    eprintln!(
+                        "myloasm-kmc-v1: warning: cannot remove temporary file {}: {error}",
+                        path.display()
+                    );
+                }
+            }
+        }
+        if let Err(error) = fs::remove_dir(&self.directory) {
+            if error.kind() != ErrorKind::NotFound {
+                eprintln!(
+                    "myloasm-kmc-v1: warning: cannot remove temporary directory {}: {error}",
+                    self.directory.display()
+                );
+            }
+        }
+    }
 }
 
 fn c_string(s: &str) -> Result<CString, String> {

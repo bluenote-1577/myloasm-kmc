@@ -47,4 +47,12 @@ extern "C" {
         error: *mut c_char,
         error_len: usize,
     ) -> c_int;
+
+    /// Writes a stranded database as `<k-mer>\t<forward count>\t<reverse count>` records.
+    pub fn kmc_dump_stranded(
+        input_db: *const c_char,
+        output_text: *const c_char,
+        error: *mut c_char,
+        error_len: usize,
+    ) -> c_int;
 }
