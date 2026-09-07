@@ -1,14 +1,11 @@
 # myloasm-kmc
 
 The on-disk k-mer counter for [myloasm](https://github.com/bluenote-1577/myloasm). 
-Myloasm v0.7.0 (release date TODO) will allow for disk-based k-mer counting, alleviating a bottleneck for complex metagenomes. 
+Myloasm v0.7.0 (release date TODO) will allow for disk-based k-mer counting, alleviating a RAM bottleneck for complex metagenomes. 
 
 It is a small Rust wrapper around a fork of [KMC](https://github.com/refresh-bio/KMC) that adds
 additional functionality that myloasm needs (details in
 [`kmc/README.md`](kmc/README.md)). This was vibe coded with Claude Fable 5.1; user beware. 
-
-`myloasm --kmc` runs this as a subprocess so that
-huge read sets can be counted with a fixed RAM budget instead of in memory.
 
 This is a separate program because KMC is GPL-3 (myloasm is MIT/Apache) and needs a C++14
 toolchain that myloasm itself does not.
