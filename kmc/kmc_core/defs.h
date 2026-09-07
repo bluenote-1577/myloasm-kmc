@@ -109,8 +109,8 @@ using uint64 = uint64_t;
 #include <string.h>
 
 #include <stdio.h>
-#include <ext/algorithm>
-using __gnu_cxx::copy_n;
+#include <algorithm>
+using std::copy_n;
 
 #endif
 

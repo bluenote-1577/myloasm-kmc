@@ -16,7 +16,7 @@ jobs:
     name: Format and lint
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust components
         run: |
           rustup update stable --no-self-update
@@ -46,7 +46,7 @@ jobs:
             linux: false
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install zlib development files
         if: matrix.linux
         run: |
@@ -63,7 +63,7 @@ jobs:
     name: Rust 1.85 minimum version
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install zlib development files
         run: |
           sudo apt-get update
@@ -78,7 +78,7 @@ jobs:
     needs: [quality, native-build, msrv]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install zlib development files
         run: |
           sudo apt-get update
