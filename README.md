@@ -3,7 +3,7 @@
 The on-disk k-mer counter for [myloasm](https://github.com/bluenote-1577/myloasm). It is a
 small Rust wrapper around a fork of [KMC](https://github.com/refresh-bio/KMC) that adds
 additional functionality that myloasm needs (details in
-[`kmc/README.md`](kmc/README.md)). 
+[`kmc/README.md`](kmc/README.md)). This was vibe coded with Claude Fable 5.1; user beware. 
 
 `myloasm --kmc` runs this as a subprocess so that
 huge read sets can be counted with a fixed RAM budget instead of in memory.
@@ -13,7 +13,11 @@ toolchain that myloasm itself does not.
 
 ## Installing
 
-Requirements: a C++14 compiler (GCC 5+ or Clang), `zlib.h`, and Rust.
+Requirements: 
+
+- a C++14 compiler (GCC 5+ or Clang)
+- `zlib.h` - zlib library installed
+- [Rust](https://rust-lang.org/) programming language with `cargo` and associated tools installed. 
 
 ```sh
 git clone https://github.com/bluenote-1577/myloasm-kmc.git
