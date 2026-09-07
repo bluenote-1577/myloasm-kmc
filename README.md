@@ -1,7 +1,7 @@
 # myloasm-kmc
 
 The on-disk k-mer counter for [myloasm](https://github.com/bluenote-1577/myloasm). 
-Myloasm v0.7.0 (release date TODO) will allow for disk-based k-mer counting, alleviating a RAM bottleneck for complex metagenomes. 
+Myloasm v0.7.0 (**release date TODO**) will allow for disk-based k-mer counting by using this binary as a standalone process via the `--kmc` option. This alleviates a RAM bottleneck for complex metagenomes. 
 
 It is a small Rust wrapper around a fork of [KMC](https://github.com/refresh-bio/KMC) that adds
 additional functionality that myloasm needs (details in
@@ -24,15 +24,17 @@ cd myloasm-kmc
 cargo install --path . # installs myloasm-kmc-v1 into ~/.cargo/bin
 ```
 
-`myloasm --kmc` requires this program to be installed. It invokes an executable named
-`myloasm-kmc-v1`, looking first next to the `myloasm` executable and then on `PATH`. The command
-above installs it to `~/.cargo/bin`, which must be on `PATH` (as it normally is after installing
-Rust with rustup).
+### Installation notes: 
 
 The build locates zlib with `pkg-config`, falling back to the compiler and linker default paths.
 For a custom installation, set `ZLIB_INCLUDE_DIR` and `ZLIB_LIB_DIR`, or set `ZLIB_DIR` when zlib
 uses the usual `<prefix>/include` and `<prefix>/lib` layout. x86_64 and aarch64 are supported
 (Linux and macOS).
+
+`myloasm --kmc` requires this program to be installed. It invokes an executable named
+`myloasm-kmc-v1`, looking first next to the `myloasm` executable and then on `PATH`. The command
+above installs it to `~/.cargo/bin`, which must be on `PATH` (as it normally is after installing
+Rust with rustup).
 
 ## Interface version
 
