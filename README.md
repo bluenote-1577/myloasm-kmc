@@ -1,7 +1,9 @@
 # myloasm-kmc
 
-The on-disk k-mer counter for [myloasm](https://github.com/bluenote-1577/myloasm). It is a
-small Rust wrapper around a fork of [KMC](https://github.com/refresh-bio/KMC) that adds
+The on-disk k-mer counter for [myloasm](https://github.com/bluenote-1577/myloasm). 
+Myloasm v0.7.0 (release date TODO) will allow for disk-based k-mer counting, alleviating a bottleneck for complex metagenomes. 
+
+It is a small Rust wrapper around a fork of [KMC](https://github.com/refresh-bio/KMC) that adds
 additional functionality that myloasm needs (details in
 [`kmc/README.md`](kmc/README.md)). This was vibe coded with Claude Fable 5.1; user beware. 
 
