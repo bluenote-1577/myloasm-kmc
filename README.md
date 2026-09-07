@@ -12,7 +12,7 @@ toolchain that myloasm itself does not.
 
 ## Installing
 
-Requirements: 
+Requirements: very standard unix-based toolchain (should be available by default) + the Rust language. Specifically, 
 
 - a C++14 compiler (GCC 5+ or Clang)
 - `zlib.h` - zlib library installed
