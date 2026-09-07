@@ -1,7 +1,7 @@
 # Vendored KMC (k-mer counter)
 
 A trimmed copy of the [KMC](https://github.com/refresh-bio/KMC) k-mer counter (upstream version
-3.2.4) taken from Jim Shaw's (blutenote-1577) fork, which adds three things upstream KMC lacks:
+3.2.4) taken from Jim Shaw's (bluenote-1577) fork, which adds three things upstream KMC lacks:
 
 * **per-strand counters** (`-sc`): each canonical k-mer stores how often it was read as itself and
   how often as its reverse complement; `-cb<n>` keeps only k-mers whose weaker strand was seen at
