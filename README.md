@@ -10,6 +10,8 @@ additional functionality that myloasm needs (details in
 This is a separate program because KMC is GPL-3 (myloasm is MIT/Apache) and needs a C++14
 toolchain that myloasm itself does not.
 
+**Citation:** Kokot, Marek, Maciej Długosz, and Sebastian Deorowicz. "KMC 3: counting and manipulating k-mer statistics." Bioinformatics 33.17 (2017): 2759-2761.
+
 ## Installing
 
 Requirements: very standard unix-based toolchain (should be available by default) + the Rust language. Specifically, 
